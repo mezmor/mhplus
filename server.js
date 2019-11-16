@@ -39,14 +39,8 @@ app.listen(port, () => {
 
 
 /** 
- * States:
- *  idle
- *  ingame
- * 
- * Transitions:
- *  idle -> ingame: enter game, temp record.
- *  ingame -> idle: exit game, record, kick off recalc?
-*/
+ * Constants 
+ */
 const GameStateEnum = Object.freeze({
   MENUS: "Menus",
   INPROGRESS: "InProgress"
