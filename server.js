@@ -73,6 +73,7 @@ const FSM = StateMachine.factory({
       console.log("LAST GAME'S DECKLIST:: " + JSON.stringify(this.currentLoRData.StaticDeckList));
       console.log("OLD GameResult :: " + JSON.stringify(this.currentLoRData.GameResult));
       console.log("NEW GameResult :: " + JSON.stringify(lorData.GameResult));
+      dbUtil.writeData(dbUtil.getDb(), "MatchHistory", lorData);
       delete this.currentLoRData; // Get rid of it after we're done.
     }
   }

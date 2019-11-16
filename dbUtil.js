@@ -13,5 +13,15 @@ module.exports = {
 
   getDb: function() {
     return _db;
+  },
+
+  writeData: function(db, col, data) {
+    try{
+      var collection = db.collection(col);
+      collection.insertOne(data, {writeConcern: {w: 1, wtimeout: 1000}});
+    }
+    catch(err){
+      console.log(err);
+    }
   }
 };
