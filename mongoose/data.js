@@ -6,7 +6,7 @@ const router = express.Router();
 //Data Model
 //this is temporary and will need to be replaced once we know
 //what data we want our object responses from the DB to return
-const Data = require("../../models/dataModel");
+const Data = require("./dataModel");
 
 ////////////////////// Database API //////////////////////////////////////////
 //UPDATE AS NEEDED

@@ -2,17 +2,28 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const path = require('path');
+const request = require('request-promise');
+const StateMachine = require('javascript-state-machine');
 
-const data = require('./routes/api/data');
+const data = require('./mongoose/data');
 const app = express();
 const port = 9001;    //port the node server will be running on
 
 //DB Setup
-const db = require('./config/keys').mongoURI;
-mongoose
-  .connect(db)
-  .then(() => console.log('Connected Successfully to db.'))
-  .catch(err => console.log(err));
+const dbUtil = require('./dbUtil');
+dbUtil.connectToServer(function(err,client){
+  console.log("Connected to DB.");
+  if (err) console.log(err);
+});
+
+// const uri = require('./config/keys').mongoURI;
+// const MongoClient = require('mongodb').MongoClient;
+
+// mongoose
+//   .connect(uri)
+//   .then(() => console.log('Connected Successfully to db.'))
+//   .catch(err => console.log(err));
+
 
 //App Setup
 app.use(bodyParser.json());
@@ -26,4 +37,127 @@ app.listen(port, () => {
   console.log(`Server listening at ${port}`);
 });
 
-/* Spawn datasource listeners */
+
+/** 
+ * States:
+ *  idle
+ *  ingame
+ * 
+ * Transitions:
+ *  idle -> ingame: enter game, temp record.
+ *  ingame -> idle: exit game, record, kick off recalc?
+*/
+const GameStateEnum = Object.freeze({
+  MENUS: "Menus",
+  INPROGRESS: "InProgress"
+});
+
+const endPoints = [
+  "http://localhost:21337/game-result",
+  "http://localhost:21337/positional-rectangles",
+  "http://localhost:21337/static-decklist",
+  "http://localhost:21337/expeditions-state"
+];
+
+/**
+ * State Machine for our listener.
+ * 
+ * When a state change occurs, the transition functions will take care of farming out the 
+ * necessary work and data gathering.
+ */
+const FSM = StateMachine.factory({
+  init: "idle",
+  data: function(dbUtil) {
+    return { dbUtil: dbUtil }
+  },
+  transitions: [
+    { name: "start", from: "idle", to: "ingame" },
+    { name: "stop", from: "ingame", to: "idle" }
+  ],
+  methods: {
+    onStart: function(lifeCycle, lorData) {
+      console.log("[START] GAME with DB :: " + this.dbUtil.getDb().databaseName);
+      console.log("CURR GAME'S DECKLIST :: " + JSON.stringify(lorData.StaticDeckList));
+      console.log("GameResult :: " + JSON.stringify(lorData.GameResult));
+      this.currentLoRData = lorData;
+    },
+    onStop: function(lifeCycle, lorData) {
+      console.log("[STOP] GAME with DB :: " + this.dbUtil.getDb().databaseName);
+      console.log("LAST GAME'S DECKLIST:: " + JSON.stringify(this.currentLoRData.StaticDeckList));
+      console.log("OLD GameResult :: " + JSON.stringify(this.currentLoRData.GameResult));
+      console.log("NEW GameResult :: " + JSON.stringify(lorData.GameResult));
+      delete this.currentLoRData; // Get rid of it after we're done.
+    }
+  }
+});
+
+const gameListenerFSM = new FSM(dbUtil);
+
+/** 
+ * Encapsulation of our LoR datasources and helpers for validation.
+ */
+class LoRData {
+  constructor(resultJsonArray) {
+    this.GameResult = resultJsonArray[0];
+    this.PositionalRectangles = resultJsonArray[1];
+    this.StaticDeckList = resultJsonArray[2];
+    this.ExpeditionState = resultJsonArray[3];
+  }
+
+  getGameState() {
+    return this.PositionalRectangles.GameState;
+  }
+}
+
+const validateLoRData = (potentialLoRData) => {
+  return (
+    !!potentialLoRData.GameResult &&
+    !!potentialLoRData.PositionalRectangles &&
+    !!potentialLoRData.StaticDeckList &&
+    !!potentialLoRData.ExpeditionState
+  );
+};
+
+/**
+ * Core Logic
+ */
+const tick = (endPoints, fsm) => async () => {
+  const lorData = new LoRData(await getLoRData(endPoints));
+  processLoRData(fsm, lorData);
+};
+
+const getLoRData = async (endPoints) => {
+  const promises = endPoints.map(e => performGetRequest(e));
+  const results = await Promise.all(promises);
+  return results;
+};
+
+const performGetRequest = async (endpoint) => {
+  try {
+    let response = await request.get(endpoint);
+    return JSON.parse(response);
+  } catch (err) {
+    return null;
+  }
+};
+
+/** 
+ * The part of the engine that processes the LoRData and acts on the FSM.
+ * Designed to be testable, so you can pass in any the LoRData or FSM you please.
+ * 
+ * If the engine encounters an InProgress game state, it tries to start the FSM if it isn't already started.
+ * If it encounters a Menus game state, it tries to stop the FSM if it isn't already stopped.
+ */
+const processLoRData = (fsm, lorData) => {
+  if (!validateLoRData(lorData)) { console.log("invalid lor data"); return; }
+  if (fsm.can('start') && lorData.getGameState() === GameStateEnum.INPROGRESS) {
+    fsm.start(lorData);
+  } else if (fsm.can('stop') && lorData.getGameState() === GameStateEnum.MENUS) {
+    fsm.stop(lorData);
+  }
+};
+
+/** 
+ * Kick off the Match History Plus listener.
+*/
+setInterval(tick(endPoints, gameListenerFSM), 2000);
