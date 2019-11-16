@@ -39,19 +39,12 @@ app.listen(port, () => {
 
 
 /** 
- * Constants 
+ * Constants
  */
 const GameStateEnum = Object.freeze({
   MENUS: "Menus",
   INPROGRESS: "InProgress"
 });
-
-const endPoints = [
-  "http://localhost:21337/game-result",
-  "http://localhost:21337/positional-rectangles",
-  "http://localhost:21337/static-decklist",
-  "http://localhost:21337/expeditions-state"
-];
 
 /**
  * State Machine for our listener.
@@ -85,11 +78,19 @@ const FSM = StateMachine.factory({
   }
 });
 
-const gameListenerFSM = new FSM(dbUtil);
+const mhplusFSM = new FSM(dbUtil);
 
 /** 
  * Encapsulation of our LoR datasources and helpers for validation.
+ * The ordering of `endPoints` matches the ordering of assignments in `LoRData()`
  */
+const endPoints = [
+  "http://localhost:21337/game-result",
+  "http://localhost:21337/positional-rectangles",
+  "http://localhost:21337/static-decklist",
+  "http://localhost:21337/expeditions-state"
+];
+
 class LoRData {
   constructor(resultJsonArray) {
     this.GameResult = resultJsonArray[0];
@@ -113,13 +114,17 @@ const validateLoRData = (potentialLoRData) => {
 };
 
 /**
- * Core Logic
+ * Core Logic!!! Start reading here!!!
+ * This gets called every X seconds at the bottom.
  */
 const tick = (endPoints, fsm) => async () => {
   const lorData = new LoRData(await getLoRData(endPoints));
   processLoRData(fsm, lorData);
 };
 
+/**
+ * The first part of the engine that fetches data from the local LoR Client endpoints.
+ */
 const getLoRData = async (endPoints) => {
   const promises = endPoints.map(e => performGetRequest(e));
   const results = await Promise.all(promises);
@@ -136,11 +141,11 @@ const performGetRequest = async (endpoint) => {
 };
 
 /** 
- * The part of the engine that processes the LoRData and acts on the FSM.
+ * The second part of the engine that processes the LoRData and acts on the engine's FSM.
  * Designed to be testable, so you can pass in any the LoRData or FSM you please.
  * 
- * If the engine encounters an InProgress game state, it tries to start the FSM if it isn't already started.
- * If it encounters a Menus game state, it tries to stop the FSM if it isn't already stopped.
+ * Start the engine if we see an InProgress frame.
+ * Stop the engine if we see a Menus frame.
  */
 const processLoRData = (fsm, lorData) => {
   if (!validateLoRData(lorData)) { console.log("invalid lor data"); return; }
@@ -154,4 +159,4 @@ const processLoRData = (fsm, lorData) => {
 /** 
  * Kick off the Match History Plus listener.
 */
-setInterval(tick(endPoints, gameListenerFSM), 2000);
+setInterval(tick(endPoints, mhplusFSM), 2000);
