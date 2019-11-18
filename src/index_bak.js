@@ -4,7 +4,6 @@ import App from "./App";
 import * as serviceWorker from "./serviceWorker";
 import "./index.css";
 import 'bootstrap/dist/css/bootstrap.min.css';
-import Container, Row, Col from 'react-bootstrap'
 
 /* constants */
 const scaleNames = {
