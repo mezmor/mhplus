@@ -5,25 +5,16 @@ const path = require('path');
 const request = require('request-promise');
 const StateMachine = require('javascript-state-machine');
 
-const data = require('./mongoose/data');
+const dbUtil = require('./db/dbUtil');
+
 const app = express();
 const port = 9001;    //port the node server will be running on
 
 //DB Setup
-const dbUtil = require('./dbUtil');
-dbUtil.connectToServer(function(err,client){
+dbUtil.connectToDB(function(err,client){
   console.log("Connected to DB.");
   if (err) console.log(err);
 });
-
-// const uri = require('./config/keys').mongoURI;
-// const MongoClient = require('mongodb').MongoClient;
-
-// mongoose
-//   .connect(uri)
-//   .then(() => console.log('Connected Successfully to db.'))
-//   .catch(err => console.log(err));
-
 
 //App Setup
 app.use(bodyParser.json());
@@ -31,7 +22,10 @@ app.use(express.static(path.join(__dirname, 'build')));
 app.get('/', (req, res) => {
   res.sendFile(path.resolve(__dirname, 'build', 'index.html'));
 });
-app.use('/api/data', data);
+
+app.get('/api/matches', async (req, res) => {
+  res.json(await dbUtil.getGameEntries());
+});
 
 app.listen(port, () => {
   console.log(`Server listening at ${port}`);
@@ -63,21 +57,36 @@ const FSM = StateMachine.factory({
   ],
   methods: {
     onStart: function(lifeCycle, lorData) {
-      console.log("[START] GAME with DB :: " + this.dbUtil.getDb().databaseName);
-      console.log("CURR GAME'S DECKLIST :: " + JSON.stringify(lorData.StaticDeckList));
-      console.log("GameResult :: " + JSON.stringify(lorData.GameResult));
+      var outputPrefix = "TRANSITION [START] GAME :: ";
+      console.log(outputPrefix + "DECKCODE: " + JSON.stringify(lorData.StaticDeckList.DeckCode));
+      console.log(outputPrefix + "SUMMONER: " + JSON.stringify(lorData.PositionalRectangles.PlayerName));
+      console.log(outputPrefix + "OPPONENT: " + JSON.stringify(lorData.PositionalRectangles.OpponentName));
       this.currentLoRData = lorData;
     },
     onStop: function(lifeCycle, lorData) {
-      console.log("[STOP] GAME with DB :: " + this.dbUtil.getDb().databaseName);
-      console.log("LAST GAME'S DECKLIST:: " + JSON.stringify(this.currentLoRData.StaticDeckList));
-      console.log("OLD GameResult :: " + JSON.stringify(this.currentLoRData.GameResult));
-      console.log("NEW GameResult :: " + JSON.stringify(lorData.GameResult));
+      var outputPrefix = "TRANSITION [STOP] GAME :: ";
+      console.log(outputPrefix + "DECKCODE: " + JSON.stringify(this.currentLoRData.StaticDeckList.DeckCode));
+      console.log(outputPrefix + "SUMMONER: " + JSON.stringify(this.currentLoRData.PositionalRectangles.PlayerName));
+      console.log(outputPrefix + "OPPONENT: " + JSON.stringify(this.currentLoRData.PositionalRectangles.OpponentName));
+      console.log(outputPrefix + "GAME HAS LOCAL ID: " + JSON.stringify(lorData.GameResult.GameID));
+      if(lorData.GameResult.LocalPlayerWon) {
+        console.log(outputPrefix + "GAME WAS WON. Nice.");
+      } else {
+        console.log(outputPrefix + "GAME WAS LOST. Owned.");
+      }      
+
+      var lastMatchEntry = dbUtil.fillMatchEntry(
+        new Date(), 
+        lorData.GameResult.GameID,
+        lorData.GameResult.LocalPlayerWon, 
+        this.currentLoRData.PositionalRectangles.PlayerName, 
+        this.currentLoRData.PositionalRectangles.OpponentName, 
+        this.currentLoRData.StaticDeckList.DeckCode, 
+        this.currentLoRData.StaticDeckList.CardsInDeck
+      );
       
-      this.currentLoRData.GameResult = lorData.GameResult;
-      dbUtil.writeData(dbUtil.getDb(), "match_summaries", this.currentLoRData);
-      delete this.currentLoRData; // Get rid of it after we're done.
-      dbUtil.computeWinPercentages(dbUtil.getDb());
+      this.dbUtil.writeGameEntry(lastMatchEntry);
+      // delete this.currentLoRData; // Get rid of it after we're done.
     }
   }
 });
@@ -152,7 +161,7 @@ const performGetRequest = async (endpoint) => {
  * Stop the engine if we see a Menus frame.
  */
 const processLoRData = (fsm, lorData) => {
-  if (!validateLoRData(lorData)) { console.log("invalid lor data"); return; }
+  if (!validateLoRData(lorData)) { console.log("invalid lor data: " + lorData); return; }
   if (fsm.can('start') && lorData.getGameState() === GameStateEnum.INPROGRESS) {
     fsm.start(lorData);
   } else if (fsm.can('stop') && lorData.getGameState() === GameStateEnum.MENUS) {
