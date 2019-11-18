@@ -73,8 +73,11 @@ const FSM = StateMachine.factory({
       console.log("LAST GAME'S DECKLIST:: " + JSON.stringify(this.currentLoRData.StaticDeckList));
       console.log("OLD GameResult :: " + JSON.stringify(this.currentLoRData.GameResult));
       console.log("NEW GameResult :: " + JSON.stringify(lorData.GameResult));
-      dbUtil.writeData(dbUtil.getDb(), "MatchHistory", this.currentLoRData);
+      
+      this.currentLoRData.GameResult = lorData.GameResult;
+      dbUtil.writeData(dbUtil.getDb(), "match_summaries", this.currentLoRData);
       delete this.currentLoRData; // Get rid of it after we're done.
+      dbUtil.computeWinPercentages(dbUtil.getDb());
     }
   }
 });
