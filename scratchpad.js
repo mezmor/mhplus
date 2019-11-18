@@ -1,13 +1,10 @@
-import { emit } from "cluster";
-import { emitKeypressEvents } from "readline";
-
 // MatchEntry { 
 //   SummonerName: String
 //   OpponentName: String
 //   SummonerWon: Boolean
 //   DeckCode: String
 //   CardList: {
-//    CardCode: String
+//    CardCode: Int
 //    ...
 //   }
 // }
@@ -37,6 +34,99 @@ import { emitKeypressEvents } from "readline";
 // output[('Ashe', 3)] returns (3, 4). 75%!
 // output[('Ashe', 2)] returns (2, 5). 40%!
 // Play more Ashes in your deck! Precomputed for constant time results! Wow, such perform.
+
+/**
+ * More perf.
+ * 
+ * |List<MatchEntry> matchHistoryUniverse| = 1 billion.
+ * 
+ * map is called in parallel for each key
+ *   map's key will be an integer, from 1 to 1000
+ *   map's value will be a List<MatchEntry> with size 1 million
+ * 
+ * 1000 Map processes will emit 420 million records each 
+ *    |batchOfMatchEntries| * |StaticData.CardList|
+ * 
+ * At the end of the Map step we will have 1000 * 420million = 420 billion records
+ * Map's output is keyed by CardCode, and we know there are maximum 420 of those.
+ * Thus, the 420 billion records would be shuffled to 420 Reduce processes.
+ * 
+ * Since each reducer is keyed by CardCode, they're going to 
+ *    |StaticData.CardList| * |CardCountInDeck| = 420 * 4 = 1680 records
+ * 
+ * At the end of the Reduce step, 420 reducers will have created 1680 records.
+ * One lookup per
+ * 
+ * 
+ * 
+ *  
+ * ourMap(int k1, List<MatchEntry> batchOfMatchEntries) {
+ *   for(matchEntry in batchOfMatchEntries) {
+ *     for(CardCode in StaticData.CardList)) {
+ *       cardCount = CardCode in this.CardList.keys() ? this.CardList.CardCode : 0;
+ *       gameWon = matchEntry.SummonerWon;
+ *       count = 1;
+ *       emit(cardCode, (cardCount, gameWon, count));
+ *     }
+ *   }
+ * }
+ 
+ * 
+ * map()
+ */
+
+
+/**
+ * Math
+ * |matchHistoryUniverse| ~= 1bn.
+ * |StaticData.CardList| = 420
+ * Max number a card can be included in a deck = 3, so 4 possible states: 0,1,2,3
+ * |CardCountInDeck| = 4
+ * 
+ * map is called over matchHistoryUniverse in parallel.
+ *    We can't have a billion async threads unfortunately.
+ * map will emit one entry for each
+ * reducers are run in parallel over
+ */
+function mapReduce(matchHistoryUniverse) {
+  matchHistoryUniverse.map(
+    function() {
+      for(CardCode in StaticList.CardList) {
+        var key = CardCode;
+        var value = {
+          cardCount: CardCode in this.CardList.keys() ? this.CardList.CardCode : 0,
+          gameWon: this.SummonerWon,
+          count: 1
+        };
+        emit(key, value);
+      }
+    }
+  ).reduce(
+    function(key, values){
+      
+    }
+  );
+}
+// function mapReduce(matchHistoryUniverse) {
+//   matchHistoryUniverse.map(
+//     function() {
+//       for(CardCode in this.CardList.keys()) {
+//         var key = CardCode;
+//         var value = {
+//           cardCount: this.CardList.CardCode,
+//           gameWon: this.SummonerWon
+//         };
+//         emit(key, value);
+//       }
+//     }
+//   ).reduce(
+//     function(key, values){
+      
+//     }
+//   );
+// }
+
+
 
 function genTable(cardList, matchHistoryUniverse) {
   var results = {};
@@ -82,8 +172,6 @@ function reduce(cardCode, cardCountWinList) {
     winCount = cardCountToStatsMaps[cardCount].wins;
     lossCount = cardCountToStatsMaps[cardCount].losses;
     totalCount = winCount + lossCount;
-    emit({
-      (cardCode, cardCount): (winCount, totalCount)
-    });
   }
 }
+
