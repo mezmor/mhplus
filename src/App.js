@@ -5,42 +5,85 @@ import Card from "react-bootstrap/Card"; //import the Card
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import Carousel from "react-bootstrap/Carousel";
+import Jumbotron from "react-bootstrap/Jumbotron";
+import Media from "react-bootstrap/Media";
 import "bootstrap/dist/css/bootstrap.min.css"; //import the bootstrap stylings
+
+class MatchList extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      error: null,
+      isLoaded: false,
+      matches: []
+    };
+  }
+
+  componentDidMount() {
+    fetch("http://localhost:9001/api/matches")
+      .then(res => res.json())
+      .then(
+        result => {
+          this.setState({
+            isLoaded: true,
+            matches: result
+          });
+        },
+        // Note: it's important to handle errors here
+        // instead of a catch() block so that we don't swallow
+        // exceptions from actual bugs in components.
+        error => {
+          this.setState({
+            isLoaded: true,
+            error
+          });
+        }
+      );
+  }
+
+  render() {
+    const { error, isLoaded, matches } = this.state;
+    if (error) {
+      return <div>Error: {error.message}</div>;
+    } else if (!isLoaded) {
+      return <div>Loading...</div>;
+    } else {
+      return (
+        <ul className="list-unstyled">
+          {matches.map(match => (
+            <Media as="li">
+              <Media.Body>
+                <h6>{getVictoryText(match)}</h6>
+                <p>{match.deckCode}</p>
+              </Media.Body>
+            </Media>
+          ))}
+        </ul>
+      );
+    }
+  }
+}
+
+function getVictoryText(match) {
+  if (match.summonerVictory) {
+    return "Game WON";
+  } else {
+    return "Game LOST";
+  }
+}
 
 //the main location where all of the components of our application will come together.
 //since we are using react-bootstrap and should be doing very little in the way of
 //custom components most of it will be directly here and not in other files.
 function App() {
   return (
-    <Container>
-      <Row>
-        <Carousel>
-          <Carousel.Item>
-            <Carousel.Caption>
-              <h3>First slide label</h3>
-              <p>Nulla vitae elit libero, a pharetra augue mollis interdum.</p>
-            </Carousel.Caption>
-          </Carousel.Item>
-          <Carousel.Item>
-            <Carousel.Caption>
-              <h3>Second slide label</h3>
-              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-            </Carousel.Caption>
-          </Carousel.Item>
-          <Carousel.Item>
-            <Carousel.Caption>
-              <h3>Third slide label</h3>
-              <p>
-                Praesent commodo cursus magna, vel scelerisque nisl consectetur.
-              </p>
-            </Carousel.Caption>
-          </Carousel.Item>
-        </Carousel>
-      </Row>
+    <Container className="p-3">
+      <Jumbotron>
+        <h1 className="header">Welcome to the Winning Submission</h1>
+      </Jumbotron>
       <Row>
         <Col xs={3}>
-          
+          <MatchList />
         </Col>
         <Col>
           <Accordion>
