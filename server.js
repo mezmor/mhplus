@@ -23,8 +23,14 @@ app.get('/', (req, res) => {
   res.sendFile(path.resolve(__dirname, 'build', 'index.html'));
 });
 
-app.get('/api/matches', async (req, res) => {
+app.get('/api/matches/', async (req, res) => {
+  console.log("[GET] / .");
   res.json(await dbUtil.getGameEntries());
+});
+
+app.get('/api/matches/:summoner', async (req, res) => {
+  console.log("[GET] / " + req.params.summoner);
+  res.json(await dbUtil.getGameEntriesForSummoner(req.params.summoner));
 });
 
 app.listen(port, () => {
@@ -161,7 +167,7 @@ const performGetRequest = async (endpoint) => {
  * Stop the engine if we see a Menus frame.
  */
 const processLoRData = (fsm, lorData) => {
-  if (!validateLoRData(lorData)) { console.log("invalid lor data: " + lorData); return; }
+  if (!validateLoRData(lorData)) { /*console.log("invalid lor data: " + lorData);*/ return; }
   if (fsm.can('start') && lorData.getGameState() === GameStateEnum.INPROGRESS) {
     fsm.start(lorData);
   } else if (fsm.can('stop') && lorData.getGameState() === GameStateEnum.MENUS) {

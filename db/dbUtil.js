@@ -24,6 +24,15 @@ function connectToDB(callback) {
   });
 }
 
+async function getGameEntriesForSummoner(summonerName) {
+  try {
+    console.log(summonerName);
+    return await _db.collection("match_summaries").find({summonerName: summonerName}).toArray();
+  } catch (err) {
+    return null;
+  }
+}
+
 async function getGameEntries() {
   try {
     return await _db.collection("match_summaries").find({}).toArray();
@@ -40,7 +49,7 @@ function writeGameEntry(matchEntry) {
   }
 }
 
-module.exports = { fillMatchEntry, connectToDB, getGameEntries, writeGameEntry }
+module.exports = { fillMatchEntry, connectToDB, getGameEntries, getGameEntriesForSummoner, writeGameEntry }
 
 
 
