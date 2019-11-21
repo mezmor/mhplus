@@ -1,8 +1,15 @@
 const MongoClient = require('mongodb').MongoClient;
+const fs = require('fs');
+const cardsJSON = JSON.parse(fs.readFileSync('./config/set1-en_us.json'));
 const MATCHES_COLLECTION_NAME = "match_summaries";
 const PER_DECK_WINS_COLLECTION = "per_deck_wins";
 const PER_CARD_WINS_COLLECTION = "per_card_wins";
 
+const cardsMap = new Map();
+
+for (card in cardsJSON){
+  cardsMap.set(cardsJSON[card].cardCode, cardsJSON[card].name);
+}
 
 var _db;
 var _lastWinPrcntComputeDate;
@@ -17,6 +24,7 @@ function fillMatchEntry(timestamp, localGameId, summonerVictory, summonerName, o
     "deckCode": deckCode,
     "deckList": deckList
   }
+
   return result;
 }
 
@@ -53,8 +61,26 @@ function writeGameEntry(matchEntry) {
   }
 }
 
+//takes in a match entry and converts the decklist from cardCodes to cardNames
+function convertToCardNames(matchEntry){
+
+  var deckListConverted = {};
+  var keys = Object.keys(matchEntry.deckList);
+
+  
+  //for each card in the deck list
+  for (key of keys){
+    //store in new object
+    var cardName = cardsMap.get(key);
+    deckListConverted[cardName] = matchEntry.deckList[key];
+  }
+
+  matchEntry.deckList = deckListConverted;
+  return matchEntry;
+}
+
 module.exports = { fillMatchEntry, connectToDB, getGameEntries, getGameEntriesForSummoner, 
-  writeGameEntry,
+  writeGameEntry, convertToCardNames,
   computeWinPercentages, computeWinPercentagesIncremental
 }
 
