@@ -138,17 +138,16 @@ class App extends React.Component {
       <Container className="p-3">
         <Navbar bg="dark" variant="dark">
           <Navbar.Brand href="/">MHPlus: The Winning Submission</Navbar.Brand>
-          <Nav className="mr-auto">
-          </Nav>
+          <Nav className="mr-auto"></Nav>
           <Form inline onSubmit={this.handleSearch}>
-          <FormControl 
-            className="mr-sm-1"
-            placeholder="Summoner name"
-            aria-label="Summoner name"
-            aria-describedby="basic-addon2"
-            value={this.state.summonerName}
-            onChange={this.handleChange}
-          />
+            <FormControl
+              className="mr-sm-1"
+              placeholder="Summoner name"
+              aria-label="Summoner name"
+              aria-describedby="basic-addon2"
+              value={this.state.summonerName}
+              onChange={this.handleChange}
+            />
           </Form>
           <Button type="submit" variant="light">
             Search
@@ -156,9 +155,68 @@ class App extends React.Component {
         </Navbar>
 
         <Jumbotron>
-          <h1 className="header">Match History<strong>+</strong></h1>
+          <h1 className="header">
+            Match History<strong>+</strong>
+          </h1>
         </Jumbotron>
-
+        
+        {/* <Nav justify variant="tabs" defaultActiveKey="#">
+          <Nav.Item>
+            <Nav.Link href="#">Latest Games</Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link eventKey="link-1">Loooonger NavLink</Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link eventKey="link-2">Link</Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link eventKey="disabled" disabled>
+              Disabled
+            </Nav.Link>
+          </Nav.Item>
+        </Nav>
+        <Tab.Container
+          id="matchlistnav"
+          defaultActiveKey={"#" + matches[0]._id}
+        >
+          <Row>
+            <Col sm={4}>
+              <ListGroup>
+                {matches.map(match => (
+                  <ListGroup.Item
+                    variant={match.summonerVictory ? "success" : "danger"}
+                    action
+                    href={"#" + match._id}
+                  >
+                    <p>{match.summonerName}</p>
+                    <strong>{getVictoryText(match)}</strong>
+                    <p>{match.timeStamp}</p>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            </Col>
+            <Col sm={8}>
+              <Tab.Content>
+                {matches.map(match => (
+                  <Tab.Pane eventKey={"#" + match._id}>
+                    <p>Time: {match.timeStamp}</p>
+                    <p>Summoner: {match.summonerName}</p>
+                    <p>Opponent: {match.opponentName}</p>
+                    <p>
+                      Winner:{" "}
+                      {match.summonerVictory
+                        ? match.summonerName
+                        : match.opponentName}
+                    </p>
+                    <p>Summoner Deck Code: {match.deckCode}</p>
+                    <p>Summoner Deck List: {JSON.stringify(match.deckList)}</p>
+                  </Tab.Pane>
+                ))}
+              </Tab.Content>
+            </Col>
+          </Row>
+        </Tab.Container> */}
         <MatchDisplay
           isLoaded={this.state.isLoaded}
           error={this.state.error}
