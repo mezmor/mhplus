@@ -137,7 +137,7 @@ class App extends React.Component {
     return (
       <Container className="p-3">
         <Navbar bg="dark" variant="dark">
-          <Navbar.Brand href="#">MHPlus: The Winning Submission</Navbar.Brand>
+          <Navbar.Brand href="/">MHPlus: The Winning Submission</Navbar.Brand>
           <Nav className="mr-auto">
           </Nav>
           <Form inline onSubmit={this.handleSearch}>
