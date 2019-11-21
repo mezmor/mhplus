@@ -1,5 +1,8 @@
 const MongoClient = require('mongodb').MongoClient;
-const uri = require('../config/keys').mongoURI;
+const MATCHES_COLLECTION_NAME = "match_summaries";
+const PER_DECK_WINS_COLLECTION = "per_deck_wins";
+const PER_CARD_WINS_COLLECTION = "per_card_wins";
+
 
 var _db;
 var _lastWinPrcntComputeDate;
@@ -17,7 +20,7 @@ function fillMatchEntry(timestamp, localGameId, summonerVictory, summonerName, o
   return result;
 }
 
-function connectToDB(callback) {
+function connectToDB(uri, callback) {
   MongoClient.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true }, function(err, client) {
     _db = client.db();
     return callback(err);
@@ -26,56 +29,60 @@ function connectToDB(callback) {
 
 async function getGameEntriesForSummoner(summonerName) {
   try {
-    console.log(summonerName);
-    return await _db.collection("match_summaries").find({summonerName: summonerName}).toArray();
+    return await _db.collection(MATCHES_COLLECTION_NAME).find({summonerName: summonerName}).sort([['timeStamp', -1]]).toArray();
   } catch (err) {
-    return null;
+    console.log("[DB ERR] " + err);
+    return [];
   }
 }
 
 async function getGameEntries() {
   try {
-    return await _db.collection("match_summaries").find({}).toArray();
+    return await _db.collection(MATCHES_COLLECTION_NAME).find({}).sort([['timeStamp', -1]]).toArray();
   } catch (err) {
-    return null;
+    console.log("[DB ERR] " + err);
+    return [];
   }
 }
 
 function writeGameEntry(matchEntry) {
   try{
-    _db.collection("match_summaries").insertOne(matchEntry, {writeConcern: {w: 1, wtimeout: 1000}});
+    _db.collection(MATCHES_COLLECTION_NAME).insertOne(matchEntry, {writeConcern: {w: 1, wtimeout: 1000}});
   } catch(err){
     console.log(err);
   }
 }
 
-module.exports = { fillMatchEntry, connectToDB, getGameEntries, getGameEntriesForSummoner, writeGameEntry }
+module.exports = { fillMatchEntry, connectToDB, getGameEntries, getGameEntriesForSummoner, 
+  writeGameEntry,
+  computeWinPercentages, computeWinPercentagesIncremental
+}
 
 
 
 /**
  * HERE LIES MAPREDUCE
  */
-function computeWinPercentages(db) {
+function computeWinPercentages() {
   _lastWinPrcntComputeDate = new Date(); // This might not be the right place for this.
-  db.collection('match_summaries').mapReduce(
+  _db.collection(MATCHES_COLLECTION_NAME).mapReduce(
     perCardMap,
     reducerFunc,
     {
-      out: 'per_card_win_percentage',
+      out: PER_DECK_WINS_COLLECTION,
       finalize: finalizeFunc
     }
   );
 }
 
-function computeWinPercentagesIncremental(db) {
+function computeWinPercentagesIncremental() {
   _lastWinPrcntComputeDate = new Date(); // This might not be the right place for this.
-  db.collection('match_summaries').mapReduce(
+  _db.collection(MATCHES_COLLECTION_NAME).mapReduce(
     function() { emit(key, value); },
     function(key, values) { return value; },
     {
       query: { timeStamp: { $gt: _lastWinPrcntComputeDate } },
-      out: { reduce: 'win_percentages' }, 
+      out: { reduce: PER_DECK_WINS_COLLECTION }, 
       finalize: function(key, reducedValue) { return reducedValue; }
     }
   );

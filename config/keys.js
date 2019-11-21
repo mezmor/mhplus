@@ -4,6 +4,7 @@
 //as a header ie: "X-Riot-Token": {key}
 //Riot API key is not needed.
 module.exports = {
-    mongoURI: 'mongodb+srv://radmire:bSR06CiGspuyE2F1@lor-mhp-5riqw.azure.mongodb.net/test?retryWrites=true&w=majority',
+    altasURI: 'mongodb+srv://radmire:bSR06CiGspuyE2F1@lor-mhp-5riqw.azure.mongodb.net/test?retryWrites=true&w=majority',
+    scaleGridURI: 'mongodb://admin:ku6ED5v6wRPz1sg1@SG-mhplus-27998.servers.mongodirector.com:27017/universe'
     //riotAPI: 'RGAPI-93e0d111-6c27-4b19-9fe7-33007720d1a6'
 }

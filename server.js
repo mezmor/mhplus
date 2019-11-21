@@ -6,12 +6,14 @@ const request = require('request-promise');
 const StateMachine = require('javascript-state-machine');
 
 const dbUtil = require('./db/dbUtil');
+const atlasURI = require('./config/keys').altasURI;
+const scaleGridURI = require('./config/keys').scaleGridURI;
 
 const app = express();
 const port = 9001;    //port the node server will be running on
 
 //DB Setup
-dbUtil.connectToDB(function(err,client){
+dbUtil.connectToDB(atlasURI, function(err,client){
   console.log("Connected to DB.");
   if (err) console.log(err);
 });
@@ -98,6 +100,15 @@ const FSM = StateMachine.factory({
 });
 
 const mhplusFSM = new FSM(dbUtil);
+
+/**
+ * summonerName -> queryResults
+ * invalidate on completion of a new game
+ * invalidate by querying the new result and replacing. 1 DB write/read per played game. 
+ *      O(1) retrieval on page refresh.
+ * invalidate by removal. 1 DB write per played game. 1 DB read per page refresh.
+ */
+var dumbCache = {};
 
 /** 
  * Encapsulation of our LoR datasources and helpers for validation.
