@@ -35,14 +35,19 @@ class MatchDisplay extends React.Component {
       return <div>No results!</div>;
     } else {
       return (
-        <Tab.Container id="matchlistnav" defaultActiveKey={"#" + matches[0]._id }>
+        <Tab.Container
+          id="matchlistnav"
+          defaultActiveKey={"#" + matches[0]._id}
+        >
           <Row>
             <Col sm={4}>
               <ListGroup>
                 {matches.map(match => (
-                  <ListGroup.Item 
-                    variant={match.summonerVictory ? "success" : "danger" }
-                    action href={"#" + match._id}>
+                  <ListGroup.Item
+                    variant={match.summonerVictory ? "success" : "danger"}
+                    action
+                    href={"#" + match._id}
+                  >
                     <p>{match.summonerName}</p>
                     <strong>{getVictoryText(match)}</strong>
                     <p>{match.timeStamp}</p>
@@ -52,14 +57,19 @@ class MatchDisplay extends React.Component {
             </Col>
             <Col sm={8}>
               <Tab.Content>
-                {matches.map(match => ( 
+                {matches.map(match => (
                   <Tab.Pane eventKey={"#" + match._id}>
-                      <p>Time: {match.timeStamp}</p>
-                      <p>Summoner: {match.summonerName}</p>
-                      <p>Opponent: {match.opponentName}</p>
-                      <p>Winner: {match.summonerVictory ? match.summonerName : match.opponentName}</p>
-                      <p>Summoner Deck Code: {match.deckCode}</p>
-                      <p>Summoner Deck List: {JSON.stringify(match.deckList)}</p>
+                    <p>Time: {match.timeStamp}</p>
+                    <p>Summoner: {match.summonerName}</p>
+                    <p>Opponent: {match.opponentName}</p>
+                    <p>
+                      Winner:{" "}
+                      {match.summonerVictory
+                        ? match.summonerName
+                        : match.opponentName}
+                    </p>
+                    <p>Summoner Deck Code: {match.deckCode}</p>
+                    <p>Summoner Deck List: {JSON.stringify(match.deckList)}</p>
                   </Tab.Pane>
                 ))}
               </Tab.Content>
@@ -102,12 +112,13 @@ class App extends React.Component {
 
   handleSearch(event) {
     // SANITIZE THE SUMMONERNAME HERE!!!
-    this.fetchMatches()
+    this.fetchMatches();
     event.preventDefault();
   }
 
   fetchMatches() {
-    let endPoint = "http://localhost:9001/api/matches/" + this.state.summonerName;
+    let endPoint =
+      "http://localhost:9001/api/matches/" + this.state.summonerName;
     fetch(endPoint)
       .then(res => res.json())
       .then(
@@ -159,64 +170,7 @@ class App extends React.Component {
             Match History<strong>+</strong>
           </h1>
         </Jumbotron>
-        
-        {/* <Nav justify variant="tabs" defaultActiveKey="#">
-          <Nav.Item>
-            <Nav.Link href="#">Latest Games</Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="link-1">Loooonger NavLink</Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="link-2">Link</Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="disabled" disabled>
-              Disabled
-            </Nav.Link>
-          </Nav.Item>
-        </Nav>
-        <Tab.Container
-          id="matchlistnav"
-          defaultActiveKey={"#" + matches[0]._id}
-        >
-          <Row>
-            <Col sm={4}>
-              <ListGroup>
-                {matches.map(match => (
-                  <ListGroup.Item
-                    variant={match.summonerVictory ? "success" : "danger"}
-                    action
-                    href={"#" + match._id}
-                  >
-                    <p>{match.summonerName}</p>
-                    <strong>{getVictoryText(match)}</strong>
-                    <p>{match.timeStamp}</p>
-                  </ListGroup.Item>
-                ))}
-              </ListGroup>
-            </Col>
-            <Col sm={8}>
-              <Tab.Content>
-                {matches.map(match => (
-                  <Tab.Pane eventKey={"#" + match._id}>
-                    <p>Time: {match.timeStamp}</p>
-                    <p>Summoner: {match.summonerName}</p>
-                    <p>Opponent: {match.opponentName}</p>
-                    <p>
-                      Winner:{" "}
-                      {match.summonerVictory
-                        ? match.summonerName
-                        : match.opponentName}
-                    </p>
-                    <p>Summoner Deck Code: {match.deckCode}</p>
-                    <p>Summoner Deck List: {JSON.stringify(match.deckList)}</p>
-                  </Tab.Pane>
-                ))}
-              </Tab.Content>
-            </Col>
-          </Row>
-        </Tab.Container> */}
+
         <MatchDisplay
           isLoaded={this.state.isLoaded}
           error={this.state.error}
