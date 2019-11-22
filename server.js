@@ -15,6 +15,7 @@ const port = 9001;    //port the node server will be running on
 //DB Setup
 dbUtil.connectToDB(atlasURI, function(err,client){
   console.log("Connected to DB.");
+  dbUtil.computePerCardWinPercentages()
   if (err) console.log(err);
 });
 

@@ -4,6 +4,7 @@ const cardsJSON = JSON.parse(fs.readFileSync('./config/set1-en_us.json'));
 const MATCHES_COLLECTION_NAME = "match_summaries";
 const PER_DECK_WINS_COLLECTION = "per_deck_wins";
 const PER_CARD_WINS_COLLECTION = "per_card_wins";
+const PER_CARDCOUNT_WINS_COLLECTION = "per_cardcount_wins";
 
 const cardsMap = new Map();
 
@@ -101,12 +102,37 @@ function computePerCardWinPercentages() {
   );
 }
 
+function computePerCardCountWinPercentages() {
+  _lastWinPrcntComputeDate = new Date(); // This might not be the right place for this.
+  _db.collection(MATCHES_COLLECTION_NAME).mapReduce(
+    perCardMap,
+    reducerFunc,
+    {
+      out: PER_CARDCOUNT_WINS_COLLECTION,
+      finalize: finalizeFunc
+    }
+  );
+}
+
 function computeDeckWinPercentages() {
   _lastWinPrcntComputeDate = new Date(); // This might not be the right place for this.
   _db.collection(MATCHES_COLLECTION_NAME).mapReduce(
     perDeckMap,
     reducerFunc,
     {
+      out: PER_DECK_WINS_COLLECTION,
+      finalize: finalizeFunc
+    }
+  );
+}
+
+function computeDeckWinPercentagesForSummoner(summonerName) {
+  _lastWinPrcntComputeDate = new Date(); // This might not be the right place for this.
+  _db.collection(MATCHES_COLLECTION_NAME).mapReduce(
+    perDeckMap,
+    reducerFunc,
+    {
+      query: {summonerName: { $eq: summonerName }},
       out: PER_DECK_WINS_COLLECTION,
       finalize: finalizeFunc
     }
@@ -128,10 +154,23 @@ function computeWinPercentagesIncremental() {
 }
 
 function perCardMap() {
-  for(deckCardCode in Object.keys(this.deckList)) {
+  for(cardCode of Object.keys(this.deckList)) {
+    var key = cardCode;
+
+    value = {
+      winCount: this.summonerVictory ? 1 : 0,
+      lossCount: this.summonerVictory ? 0 : 1,
+      winPercent: 0
+    };
+    emit(key, value);
+  }
+}
+
+function perCardCountMap() {
+  for(cardCode of Object.keys(this.deckList)) {
     var key = {
-      cardCode: deckCardCode,
-      cardCount: this.deckList.deckCardCode
+      cardCode: cardCode,
+      cardCount: this.deckList[cardCode]
     }
 
     value = {
@@ -152,6 +191,8 @@ function perDeckMap() {
   };
   emit(key, value);
 }
+
+
 
 function reducerFunc(key, values) {
   var reducedObj = {
