@@ -11,6 +11,14 @@ import ListGroup from "react-bootstrap/ListGroup";
 import Navbar from "react-bootstrap/Navbar";
 import Nav from "react-bootstrap/Nav";
 import Form from "react-bootstrap/Form";
+import DecksApp from "./DecksApp";
+import {
+  BrowserRouter as Router,
+  Switch,
+  Route,
+  Link
+} from "react-router-dom";
+
 import "bootstrap/dist/css/bootstrap.min.css"; //import the bootstrap stylings
 
 class MatchDisplay extends React.Component {
@@ -117,8 +125,8 @@ class App extends React.Component {
   }
 
   fetchMatches() {
-    let endPoint =
-      "http://localhost:9001/api/matches/" + this.state.summonerName;
+    let baseEndPoint = "http://localhost:9001/api/matches/";
+    let endPoint = baseEndPoint + this.state.summonerName;
     fetch(endPoint)
       .then(res => res.json())
       .then(
@@ -138,6 +146,7 @@ class App extends React.Component {
           });
         }
       );
+    
   }
 
   handleChange(event) {
@@ -146,37 +155,57 @@ class App extends React.Component {
 
   render() {
     return (
-      <Container className="p-3">
-        <Navbar bg="dark" variant="dark">
-          <Navbar.Brand href="/">MHPlus: The Winning Submission</Navbar.Brand>
-          <Nav className="mr-auto"></Nav>
-          <Form inline onSubmit={this.handleSearch}>
-            <FormControl
-              className="mr-sm-1"
-              placeholder="Summoner name"
-              aria-label="Summoner name"
-              aria-describedby="basic-addon2"
-              value={this.state.summonerName}
-              onChange={this.handleChange}
-            />
-          </Form>
-          <Button type="submit" variant="light">
-            Search
-          </Button>
-        </Navbar>
+      <Router>
+        <Container className="p-3">
+          <Navbar bg="dark" variant="dark">
+            <Navbar.Brand href="/"><Link className="navbar-brand" to="/"></Link>MHPlus: The Winning Submission</Navbar.Brand>
+            <Nav.Link href="#"><Link className="nav-link" to="/decks">Deck Stats</Link></Nav.Link>
+            <Nav className="mr-auto"></Nav>
+            <Form inline onSubmit={this.handleSearch}>
+              <FormControl
+                className="mr-sm-1"
+                placeholder="Summoner name"
+                aria-label="Summoner name"
+                aria-describedby="basic-addon2"
+                value={this.state.summonerName}
+                onChange={this.handleChange}
+              />
+            </Form>
+            <Button type="submit" variant="light">
+              Search
+            </Button>
+          </Navbar>
 
-        <Jumbotron>
-          <h1 className="header">
-            Match History<strong>+</strong>
-          </h1>
-        </Jumbotron>
+          <Switch>
+            <Route exact path="/">
+              <Jumbotron>
+                <h1 className="header">
+                  Match History<strong>+</strong>
+                </h1>
+              </Jumbotron>
 
-        <MatchDisplay
-          isLoaded={this.state.isLoaded}
-          error={this.state.error}
-          matches={this.state.matches}
-        />
-      </Container>
+              <MatchDisplay
+                isLoaded={this.state.isLoaded}
+                error={this.state.error}
+                matches={this.state.matches}
+              />
+            </Route>
+            <Route to="/decks">
+              <Jumbotron>
+                <h1 className="header">
+                  Per Deck Stats <strong>+</strong>
+                </h1>
+              </Jumbotron>
+
+              <DecksApp
+                isLoaded={this.state.isLoaded}
+                error={this.state.error}
+                deckstats={this.state.deckstats}
+              />
+            </Route>
+          </Switch>
+        </Container>
+      </Router>
     );
   }
 }
