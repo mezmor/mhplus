@@ -47,7 +47,7 @@ async function getGameEntriesForSummoner(summonerName) {
 
 async function getGameEntries() {
   try {
-    return await _db.collection(MATCHES_COLLECTION_NAME).find({}).sort([['timeStamp', -1]]).toArray();
+    return (await _db.collection(MATCHES_COLLECTION_NAME).find({}).sort([['timeStamp', -1]]).toArray()).map(convertToCardNames);
   } catch (err) {
     console.log("[DB ERR] " + err);
     return [];
