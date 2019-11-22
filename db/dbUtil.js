@@ -81,7 +81,7 @@ function convertToCardNames(matchEntry){
 
 module.exports = { fillMatchEntry, connectToDB, getGameEntries, getGameEntriesForSummoner, 
   writeGameEntry, convertToCardNames,
-  computeWinPercentages, computeWinPercentagesIncremental
+  computeWinPercentages, computeWinPercentagesIncremental, computeDeckWinPercentages
 }
 
 
@@ -95,11 +95,24 @@ function computeWinPercentages() {
     perCardMap,
     reducerFunc,
     {
+      out: PER_CARD_WINS_COLLECTION,
+      finalize: finalizeFunc
+    }
+  );
+}
+
+function computeDeckWinPercentages() {
+  _lastWinPrcntComputeDate = new Date(); // This might not be the right place for this.
+  _db.collection(MATCHES_COLLECTION_NAME).mapReduce(
+    perDeckMap,
+    reducerFunc,
+    {
       out: PER_DECK_WINS_COLLECTION,
       finalize: finalizeFunc
     }
   );
 }
+
 
 function computeWinPercentagesIncremental() {
   _lastWinPrcntComputeDate = new Date(); // This might not be the right place for this.
@@ -115,7 +128,7 @@ function computeWinPercentagesIncremental() {
 }
 
 function perCardMap() {
-  for(deckCardCode in this.deckList.keys()) {
+  for(deckCardCode in Object.keys(this.deckList)) {
     var key = {
       cardCode: deckCardCode,
       cardCount: this.deckList.deckCardCode
@@ -149,7 +162,7 @@ function reducerFunc(key, values) {
 
   values.forEach(function(value){
     reducedObj.winCount += value.winCount;
-    reductedObj.lossCOunt += value.lossCount;
+    reducedObj.lossCount += value.lossCount;
   });
   return value; 
 }

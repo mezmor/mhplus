@@ -94,6 +94,8 @@ const FSM = StateMachine.factory({
       );
       
       this.dbUtil.writeGameEntry(lastMatchEntry);
+      this.dbUtil.computeWinPercentages();
+      this.dbUtil.computeDeckWinPercentages();
       // delete this.currentLoRData; // Get rid of it after we're done.
     }
   }
