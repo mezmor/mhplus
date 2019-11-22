@@ -81,7 +81,7 @@ function convertToCardNames(matchEntry){
 
 module.exports = { fillMatchEntry, connectToDB, getGameEntries, getGameEntriesForSummoner, 
   writeGameEntry, convertToCardNames,
-  computeWinPercentages, computeWinPercentagesIncremental, computeDeckWinPercentages
+  computePerCardWinPercentages, computeWinPercentagesIncremental, computeDeckWinPercentages
 }
 
 
@@ -89,7 +89,7 @@ module.exports = { fillMatchEntry, connectToDB, getGameEntries, getGameEntriesFo
 /**
  * HERE LIES MAPREDUCE
  */
-function computeWinPercentages() {
+function computePerCardWinPercentages() {
   _lastWinPrcntComputeDate = new Date(); // This might not be the right place for this.
   _db.collection(MATCHES_COLLECTION_NAME).mapReduce(
     perCardMap,
@@ -164,7 +164,7 @@ function reducerFunc(key, values) {
     reducedObj.winCount += value.winCount;
     reducedObj.lossCount += value.lossCount;
   });
-  return value; 
+  return reducedObj; 
 }
 
 function finalizeFunc(key, reducedValue) {

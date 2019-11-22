@@ -9,7 +9,6 @@ import "bootstrap/dist/css/bootstrap.min.css"; //import the bootstrap stylings
 class MatchDisplay extends React.Component {
   render() {
     const { isLoaded, error, matches } = this.props;
-    console.log(matches);
     // var matches = [{
     //   deckCode: "CEAAECABAIDASDAUDIOC2OIJAECBEEY3DQTSQNBXHMBAEAIEBUWAIAICC4MB4KY",
     //   deckList: {"01IO006": 2, "01IO009": 2, "01IO012": 2, "01IO020": 2, "01IO026": 2},
